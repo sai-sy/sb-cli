@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -228,12 +229,14 @@ var (
 		},
 	}
 
-	fromBackup string
+	fromBackup           string
+	healthTimeoutSeconds int
 
 	dbStartCmd = &cobra.Command{
 		Use:   "start",
 		Short: "Starts local Postgres database",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			start.HealthTimeout = time.Duration(healthTimeoutSeconds) * time.Second
 			return start.Run(cmd.Context(), fromBackup, afero.NewOsFs())
 		},
 	}
@@ -347,6 +350,7 @@ func init() {
 	// Build start command
 	startFlags := dbStartCmd.Flags()
 	startFlags.StringVar(&fromBackup, "from-backup", "", "Path to a logical backup file.")
+	startFlags.IntVar(&healthTimeoutSeconds, "health-timeout", int(start.HealthTimeout.Seconds()), "Seconds to wait for database health checks.")
 	dbCmd.AddCommand(dbStartCmd)
 	// Build test command
 	dbCmd.AddCommand(dbTestCmd)
